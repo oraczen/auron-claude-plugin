@@ -1,0 +1,17 @@
+{
+  "name": "auron",
+  "owner": {
+    "name": "Auron"
+  },
+  "description": "Auron's Claude Code plugin — https://useauron.ai/",
+  "version": "0.1.0",
+  "plugins": [
+    {
+      "name": "auron",
+      "source": "./",
+      "description": "Auron's debrief agent for Claude Code.",
+      "homepage": "https://useauron.ai/",
+      "category": "sales"
+    }
+  ]
+}

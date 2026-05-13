@@ -1,0 +1,12 @@
+{
+  "name": "auron",
+  "version": "0.1.0",
+  "description": "Auron's Claude Code plugin.",
+  "author": {
+    "name": "Auron",
+    "url": "https://useauron.ai/"
+  },
+  "homepage": "https://useauron.ai/",
+  "license": "MIT",
+  "keywords": ["auron"]
+}
