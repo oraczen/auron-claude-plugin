@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Cross-compile auron-auth for macOS, Linux, and Windows.
-# Outputs binaries into skills/auth/bin/ so the auth skill can invoke them.
+# Cross-compile auron-api for macOS, Linux, and Windows.
+# Outputs binaries into skills/api/bin/ so the api skill can invoke them.
 
 set -euo pipefail
 
@@ -9,7 +9,6 @@ VERSION="$(git -C "${ROOT}" describe --tags --always --dirty 2>/dev/null || echo
 
 # name : pkg : out_dir
 BINARIES=(
-  "auron-auth:./cmd/auron-auth:${ROOT}/skills/auth/bin"
   "auron-api:./cmd/auron-api:${ROOT}/skills/api/bin"
 )
 

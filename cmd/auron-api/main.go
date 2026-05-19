@@ -47,6 +47,8 @@ func main() {
 		err = cmdCall(args)
 	case "list":
 		err = cmdList(args)
+	case "set-token":
+		err = cmdSetToken(args)
 	case "-h", "--help", "help":
 		usage()
 		return
@@ -68,6 +70,7 @@ Commands:
   sync                            Fetch openapi.json and rebuild ~/.auron/api-wiki/
   search <query> [--limit N]      Search operations by tag/path/summary/operationId
   list                            List wiki sections (tags)
+  set-token                       Read a bearer token from stdin and cache it in ~/.auron/config.json
   call <METHOD> <path> [flags]    Make an authenticated API call
         --query k=v[,k=v...]      Query string params
         --header k=v[,k=v...]     Extra request headers
@@ -278,7 +281,7 @@ func cmdCall(args []string) error {
 
 	cfg, err := loadTokenConfig()
 	if err != nil {
-		return fmt.Errorf("auth: %w (run /auron:auth first)", err)
+		return fmt.Errorf("auth: %w (token missing — call mcp__claude_ai_auron__exchange_token and pipe into `auron-api set-token`)", err)
 	}
 
 	base, err := apiBaseURL()
@@ -619,19 +622,24 @@ func scoreOp(op operation, terms []string) int {
 // ---------------------------------------------------------------------------
 
 type tokenConfig struct {
-	AccessToken  string    `json:"access_token"`
-	RefreshToken string    `json:"refresh_token"`
-	ExpiresAt    time.Time `json:"expires_at"`
+	AccessToken string `json:"access_token"`
+}
+
+func configPath() (string, error) {
+	if p := os.Getenv("AURON_CONFIG"); p != "" {
+		return p, nil
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, defaultConfigPath), nil
 }
 
 func loadTokenConfig() (*tokenConfig, error) {
-	path := os.Getenv("AURON_CONFIG")
-	if path == "" {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return nil, err
-		}
-		path = filepath.Join(home, defaultConfigPath)
+	path, err := configPath()
+	if err != nil {
+		return nil, err
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -644,10 +652,38 @@ func loadTokenConfig() (*tokenConfig, error) {
 	if c.AccessToken == "" {
 		return nil, errors.New("no access_token in config")
 	}
-	if !c.ExpiresAt.IsZero() && time.Now().After(c.ExpiresAt) {
-		return nil, errors.New("access_token expired — re-run /auron:auth")
-	}
 	return &c, nil
+}
+
+func cmdSetToken(args []string) error {
+	_ = args
+	raw, err := io.ReadAll(os.Stdin)
+	if err != nil {
+		return fmt.Errorf("read stdin: %w", err)
+	}
+	token := strings.TrimSpace(string(raw))
+	if token == "" {
+		return errors.New("set-token: no token on stdin")
+	}
+	path, err := configPath()
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return err
+	}
+	body, err := json.MarshalIndent(tokenConfig{AccessToken: token}, "", "  ")
+	if err != nil {
+		return err
+	}
+	if err := atomicWrite(path, body, 0o600); err != nil {
+		return err
+	}
+	if err := os.Chmod(path, 0o600); err != nil {
+		return err
+	}
+	fmt.Fprintf(os.Stderr, "wrote token → %s\n", path)
+	return nil
 }
 
 func loadCachedSpec() (*OpenAPI, error) {

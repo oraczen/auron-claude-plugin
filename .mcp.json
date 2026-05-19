@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "auron": {
+      "url": "https://dev.useauron.ai/api/mcp"
+    }
+  }
+}
